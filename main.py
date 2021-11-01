@@ -19,7 +19,7 @@ def nearest_mean_classifier(training_data, training_labels,
             di = np.sum((m - x) ** 2, axis=1)  # distance to means
             assigned_labels[i] = np.argmin(di) + 1
         e = np.mean(testing_labels != assigned_labels)
-        return e, assigned_labels
+        return e, assigned_labels.astype('int')
 
 
 df = pd.read_csv("data_banknote_authentication.txt", header=None)  # this is the data set Z
@@ -29,7 +29,7 @@ npdf = df.to_numpy()  # numpy datafile
 # print(npdf.info())
 # split into data and labels
 data = npdf[:, :-1]  # features of the banknotes
-labels = npdf[:, -1]  # labels of the  banknotes
+labels = npdf[:, -1].astype("int")  # labels of the  banknotes
 
 n = len(data[0])  # No of features
 N = len(data)  # No of objects
@@ -37,7 +37,7 @@ N = len(data)  # No of objects
 for i in range(len(labels)):
     labels[i] += 1  # encode classes and 1 and 2
 c = np.max(labels).astype('int')  # No of classes
-
+print(labels)
 print(f"No of classes: {c} \nNo of features: {n} \nNo of Objects: {N}")
 plt.figure(figsize=(10, 8))
 k = 1
@@ -51,15 +51,36 @@ for i in range(4):
         plt.title(titleString, size=8)
         k += 1
 plt.show()
-ResubError, _ = nearest_mean_classifier(data, labels, data, labels)  # calculate the resub using nearest_mean_classifier
+ResubError, resubAssignedLabels = nearest_mean_classifier(data, labels, data,
+                                                          labels)  # calculate the resub using nearest_mean_classifier
 print(f"Resubstitution error: {ResubError}")
 
-# split the data using numpy for the holdout method
 
-np.random.shuffle(data)
-np.random.shuffle(labels)
-splitPercent = int(0.5 * len(npdf))
-trd, tsd, trl, tsl = data[:splitPercent], data[splitPercent:], labels[:splitPercent], labels[:splitPercent]
-# print(f"training data: {len(trd)}") # used for checking the split of data
-holdoutError, _ = nearest_mean_classifier(trd, trl, tsd, tsl)  # calculate the holdout using nearest_mean_classifier
-print(f"Holout Error: {holdoutError}")
+# split the data using numpy for the holdout method
+def calcHoldout():
+    np.random.shuffle(data)
+    np.random.shuffle(labels)
+    splitPercent = int(0.5 * len(npdf))
+    trd, tsd, trl, tsl = data[:splitPercent], data[splitPercent:], labels[:splitPercent], labels[:splitPercent]
+    # print(f"training data: {len(trd)}") # used for checking the split of data
+    holdoutError, _ = nearest_mean_classifier(trd, trl, tsd, tsl)  # calculate the holdout using nearest_mean_classifier
+
+    return holdoutError
+
+
+holdoutError = calcHoldout()
+print(f"Holdout Error: {holdoutError}")
+
+
+# Question 3
+def confusion_matrix(true_labels, assigned_labels):
+    c = np.max(true_labels).astype("int")
+    cm = np.empty((c, c)).astype("int")
+    for i in range(len(true_labels)):
+        cm[true_labels[i] - 1, assigned_labels[i].astype("int") - 1] += 1
+    return cm
+
+
+# print(resubAssignedLabels)
+conf = confusion_matrix(labels, resubAssignedLabels)
+print(conf)
